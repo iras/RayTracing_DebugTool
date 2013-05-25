@@ -150,7 +150,7 @@ class Ui_Form (QWidget):
     # listeners
     
     def resizeArrows (self, e):
-        
+
         self.widget.changeArrowsSize (e*0.5)
     
     def stopRender (self):
@@ -164,6 +164,7 @@ class Ui_Form (QWidget):
             self.disconnect (self.engine, SIGNAL ("update (float)"), self.updateImage)
             self.disconnect (self.engine, SIGNAL ("thread_completed()"), self.endCrunching)
             self.disconnect (self.engine, SIGNAL ("vector_created(PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
+            self.disconnect (self.engine, SIGNAL ("line_created  (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
     
     def clickRender (self):
         
@@ -178,11 +179,12 @@ class Ui_Form (QWidget):
         # grab screenshot of OpenGL viewer and add it into the QImage instance.
         self.image = self.widget.grabFrameBuffer ()
         self.pixmap_item = self.label_view.setPixmap (QPixmap.fromImage (self.image))
-                
+        
         self.engine = REngineThread (self.image, self.widget.getNormalMatrix (), self.widget.getFovy ())
         self.connect (self.engine, SIGNAL("update (float)"), self.updateImage)
         self.connect (self.engine, SIGNAL("thread_completed()"), self.endCrunching)
         self.connect (self.engine, SIGNAL("vector_created(PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
+        self.connect (self.engine, SIGNAL("line_created  (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
         
         self.engine.start ()
     
@@ -195,8 +197,8 @@ class Ui_Form (QWidget):
         self.progressBar.setValue (int(100*e))
     def displayGLMatrix (self, e):
         '''
-        this method registered to the MatrixChanged event fired from the OGLViewer
-        component. It prints the model matrix. Useful for debugging purposes.
+        this method is registered to the MatrixChanged event fired from the OGLViewer
+        component. It prints the model matrix. Only for debugging purposes.
         '''
         pass
         #print e

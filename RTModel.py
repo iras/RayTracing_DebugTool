@@ -41,10 +41,11 @@ class REngineThread (QThread):
         
         self.carry_on = True
         
-        # signals
-        self.__Update          = SIGNAL ('update(float)')
-        self.__VectorCreated   = SIGNAL ('vector_created (PyQt_PyObject, PyQt_PyObject, QString)')
-        self.__ThreadCompleted = SIGNAL ('thread_completed()')
+        # custom signals
+        self.__SIGNAL_Update          = SIGNAL ('update(float)')
+        self.__SIGNAL_VectorCreated   = SIGNAL ('vector_created (PyQt_PyObject, PyQt_PyObject, QString)')
+        self.__SIGNAL_LineCreated     = SIGNAL ('line_created   (PyQt_PyObject, PyQt_PyObject, QString)')
+        self.__SIGNAL_ThreadCompleted = SIGNAL ('thread_completed()')
         
     
     
@@ -94,19 +95,22 @@ class REngineThread (QThread):
                 self.__image.setPixel (i, j, qRgb ((ff * (a + ray_direction[0]) * h), (ff * (a + ray_direction[1]) * h), 0))
                 
                 if j%100 == 0 and i%100 == 0: # display to screen every 10 lines 10 pixels apart.
-                    # fire vector_created signal : payload -> vector's origin in space, vector direction
-                    self.emit (self.__VectorCreated, self.__world_origin, world_ray, QString('d')) # position = self.__world_origin, orientation = world_ray
+                    # fire line_created signal : payload -> line origin in space, line direction, line type
+                    # position = self.__world_origin, orientation = world_ray
+                    self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, world_ray, QString('o'))
+                    # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type
+                    self.emit (self.__SIGNAL_VectorCreated, self.__world_origin, world_ray, QString('d'))
             
             if j%10 == 0: # display to screen every 10 lines
-                self.emit (self.__Update, float(j)/float(self.__height))
+                self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
             
             if not self.carry_on:
                 break
         
-        self.emit (self.__Update, float(j)/float(self.__height))
+        self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
         
         if self.carry_on: # if and only if the rendering was completed then fire this signal away.
-            self.emit (self.__ThreadCompleted)
+            self.emit (self.__SIGNAL_ThreadCompleted)
     
     
     def setCarryOnFlag (self, boo):

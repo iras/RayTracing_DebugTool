@@ -83,6 +83,9 @@ class OGLViewer (QGLWidget):
         self.__arrows_list = []
         self.__arrow_len = 2.0
         
+        self.__line_list = []
+        self.__l_param   = -200.0
+        
     def initializeGL (self):
         '''
         usual OpenGL method
@@ -178,13 +181,10 @@ class OGLViewer (QGLWidget):
             glTranslatef (-self.__orig.x(), -self.__orig.y(), -self.__orig.z()) # rotation around current origin.
                         
             self.refreshMatrices ()
-            # set the camera matrix. Not needed here.
-            #glMatrixMode  (GL_MODELVIEW)
-            # m_ref = self.__mtx.copyDataTo() # this one needs to be turned into a list of 4-lists otherwise it won't work.
-            #glLoadMatrixd (m_ref_list_of_lists) # read comment above
             
             self.displayObjects ()
-            self.displayArrow ()
+            self.displayArrows ()
+            self.displayLines ()
             
             self.drawGrid ()
             self.drawFixedOriginAxes ()
@@ -272,22 +272,34 @@ class OGLViewer (QGLWidget):
         glutWireCube (GLdouble(5.0))
         glPopMatrix ()
     
-    def displayArrow (self):
+    def displayLines (self):
+        
+        for line in self.__line_list:
+            
+            p = line[0]       # line initial position  (3-list)
+            d = line[1]       # line direction (3-list)
+            t = str(line[2])  # line type (o:open line, p:point-to-point line)
+            
+            glBegin (GL_LINES)
+            glColor3ub (255, 0, 0)
+            glVertex3f (p[0], p[1], p[2])
+            if   t=='o':
+                glVertex3f (self.__l_param*(p[0]-d[0]) + d[0],
+                            self.__l_param*(p[1]-d[1]) + d[1],
+                            self.__l_param*(p[2]-d[2]) + d[2])
+            elif t=='p':
+                glVertex3f (d[0], d[1], d[2])
+            else: raise sys.exit ('*** Unrecognised line type : "' + t + '"')
+            
+            glEnd ()
+    
+    def displayArrows (self):
         
         for arrow in self.__arrows_list:
             
             p = arrow[0]      # arrow position  (3-list)
             d = arrow[1]      # arrow direction (3-list)
             t = str(arrow[2]) # arrow type (i:incident, d:departing)
-            
-            # arrow proxy used for debugging purposes (just a line replacing the arrow's shape)
-            '''
-            glBegin (GL_LINES)
-            glColor3ub (255, 0, 0)
-            glVertex3f (p[0], p[1], p[2])
-            glVertex3f (d[0], d[1], d[2])
-            glEnd ()
-            '''
             
             # scale parameters
             scale_x = 0.01
@@ -364,26 +376,24 @@ class OGLViewer (QGLWidget):
     # - - -  listeners  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
     def changeArrowsSize (self, new_size):
-        
         if len(self.__arrows_list) > 0:
             self.__arrow_len = new_size
         
     def addArrow (self, pos, orient, arrow_type):
-        
         self.__arrows_list.append ([pos, orient, arrow_type])
+        
+    def addLine (self, pos, orient_or_second_point, line_type):
+        self.__line_list.append ([pos, orient_or_second_point, line_type])
     
     def keyPressEvent (self, e):
-        
         if e.key() == Qt.Key_Control or e.key() == Qt.Key_Meta:  self.__Ctrl_or_Meta_key_pressed = True
         if e.key() == Qt.Key_Alt:  self.__Alt_key_pressed = True
     
     def keyReleaseEvent (self, e):
-        
         if e.key() == Qt.Key_Control or e.key() == Qt.Key_Meta:  self.__Ctrl_or_Meta_key_pressed = False
         if e.key() == Qt.Key_Alt:  self.__Alt_key_pressed = False
     
     def wheelEvent (self, e):
-        
         if self.__Ctrl_or_Meta_key_pressed:
             self.__cam_dist += e.delta() * 0.01
     
