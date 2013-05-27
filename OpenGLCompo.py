@@ -80,12 +80,17 @@ class OGLViewer (QGLWidget):
     
     def _init_objec_vars (self):
         
-        self.__arrows_list = []
-        self.__arrow_len = 2.0
+        self.__arrows_list  = []
+        self.__arrow_len    = 2.0
         
-        self.__line_list = []
-        self.__l_param   = -200.0
+        self.__lines_list   = []
+        self.__l_param      = -200.0
         
+        self.__intersections_list = []
+        
+        self.__poly_model   = None
+        self.__poly_list    = [] # by polygon I mean triangle.
+    
     def initializeGL (self):
         '''
         usual OpenGL method
@@ -179,12 +184,13 @@ class OGLViewer (QGLWidget):
             glRotatef    (-30 - self.__curr_angles.y() * 0.15,  1, 0, 0)        # rotate around axis x.
             glRotatef    (-30 + self.__curr_angles.x() * 0.1,   0, 1, 0)        # rotate around axis y.
             glTranslatef (-self.__orig.x(), -self.__orig.y(), -self.__orig.z()) # rotation around current origin.
-                        
+            
             self.refreshMatrices ()
             
             self.displayObjects ()
             self.displayArrows ()
             self.displayLines ()
+            self.displayIntersections ()
             
             self.drawGrid ()
             self.drawFixedOriginAxes ()
@@ -252,29 +258,38 @@ class OGLViewer (QGLWidget):
             glVertex3f (bl[0],bl[1],bl[2]);   glVertex3f (tl[0],tl[1],tl[2])
             glEnd ()
     
+    def displayIntersections (self):
+        
+        for intsect in self.__intersections_list:
+            
+            p = intsect[0]
+            c = intsect[1]
+            # Draw a translated solid sphere
+            glPushMatrix ()
+            glRotatef (10, 0, 0.5, 1)
+            glTranslatef (p[0], p[1], p[2])
+            glColor3f    (c[0], c[1], c[2])
+            glutSolidSphere (GLdouble (0.05), 9, 9)
+            glPopMatrix ()
+    
     def displayObjects (self):
         
         glClear (GL_COLOR_BUFFER_BIT)
         
-        # Draw a translated wireframe sphere
-        glPushMatrix ()
-        glRotatef (10, 0, 0.5, 1)
-        glTranslatef (6, -8, 0)
-        glColor3f (0.2, 0.5, 0.3)
-        glutWireSphere (GLdouble(5.0), 15, 15)
-        glPopMatrix ()
-        
-        # Draw a translated wireframe cube
-        glPushMatrix ()
-        glRotatef (-10, 0, 0.5, 1)
-        glTranslatef (-7, 7, 0)
-        glColor3f (0.5, 0.5, 0)
-        glutWireCube (GLdouble(5.0))
-        glPopMatrix ()
+        for poly in self.__poly_list:
+            
+            p0 = poly[0]
+            p1 = poly[1]
+            p2 = poly[2]
+            glBegin (GL_TRIANGLES)
+            glVertex3f (p0.x(), p0.y(), p0.z())
+            glVertex3f (p1.x(), p1.y(), p1.z())
+            glVertex3f (p2.x(), p2.y(), p2.z())
+            glEnd()
     
     def displayLines (self):
         
-        for line in self.__line_list:
+        for line in self.__lines_list:
             
             p = line[0]       # line initial position  (3-list)
             d = line[1]       # line direction (3-list)
@@ -383,7 +398,10 @@ class OGLViewer (QGLWidget):
         self.__arrows_list.append ([pos, orient, arrow_type])
         
     def addLine (self, pos, orient_or_second_point, line_type):
-        self.__line_list.append ([pos, orient_or_second_point, line_type])
+        self.__lines_list.append ([pos, orient_or_second_point, line_type])
+    
+    def addIntersection (self, pos, icolor):
+        self.__intersections_list.append ([pos, icolor])
     
     def keyPressEvent (self, e):
         if e.key() == Qt.Key_Control or e.key() == Qt.Key_Meta:  self.__Ctrl_or_Meta_key_pressed = True
@@ -405,3 +423,7 @@ class OGLViewer (QGLWidget):
     def getFovy         (self): return self.__fovy
     def getMatrix       (self): return self.__mtx
     def getNormalMatrix (self): return self.__norm_mtx
+    
+    def setModel        (self, model):
+        self.__poly_model = model
+        self.__poly_list  = model.getPolyListCopy ()

@@ -8,6 +8,10 @@ from PyQt4.QtCore import QTimer, QObject, QString, QRect, QMetaObject, SIGNAL, Q
 from PyQt4.QtGui  import QProgressBar, QPushButton, QWidget, QFont, QSizePolicy, QApplication, QImage, QColor, qRgb, QPixmap, QLabel, QPlainTextEdit, QSlider
 from OpenGLCompo  import OGLViewer
 
+from RTEngine     import REngineThread
+from ThreeDModels import Model
+
+
 try:
     _fromUtf8 = QString.fromUtf8
 except AttributeError:
@@ -22,8 +26,6 @@ except AttributeError:
     def _translate (context, text, disambig):
         return QApplication.translate (context, text, disambig)
 
-from RTModel import REngineThread
-
 
 
 class Ui_Form (QWidget):
@@ -35,9 +37,12 @@ class Ui_Form (QWidget):
         QWidget.__init__(self, parent)
         self.timer = QTimer (self)
         
-        self.engine = None
+        self.__engine = None
+        self.__model  = Model ()
     
     def wireOGLViewer (self):
+        
+        self.widget.setModel (self.__model)
         
         QObject.connect (self.widget, SIGNAL ("MatrixChanged (PyQt_PyObject)"), self.displayGLMatrix)
 
@@ -155,16 +160,17 @@ class Ui_Form (QWidget):
     
     def stopRender (self):
         
-        if self.engine:
+        if self.__engine:
             
-            self.engine.setCarryOnFlag (False)
+            self.__engine.setCarryOnFlag (False)
             self.renderBtn.setDisabled (False)
             self.stopBtn.setDisabled   (True)
             
-            self.disconnect (self.engine, SIGNAL ("update (float)"), self.updateImage)
-            self.disconnect (self.engine, SIGNAL ("thread_completed()"), self.endCrunching)
-            self.disconnect (self.engine, SIGNAL ("vector_created(PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
-            self.disconnect (self.engine, SIGNAL ("line_created  (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
+            self.disconnect (self.__engine, SIGNAL ("update (float)"), self.updateImage)
+            self.disconnect (self.__engine, SIGNAL ("thread_completed()"), self.endCrunching)
+            self.disconnect (self.__engine, SIGNAL ("inters_created (PyQt_PyObject, PyQt_PyObject)"),          self.widget.addIntersection)
+            self.disconnect (self.__engine, SIGNAL ("vector_created (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
+            self.disconnect (self.__engine, SIGNAL ("line_created   (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
     
     def clickRender (self):
         
@@ -180,19 +186,21 @@ class Ui_Form (QWidget):
         self.image = self.widget.grabFrameBuffer ()
         self.pixmap_item = self.label_view.setPixmap (QPixmap.fromImage (self.image))
         
-        self.engine = REngineThread (self.image, self.widget.getNormalMatrix (), self.widget.getFovy ())
-        self.connect (self.engine, SIGNAL("update (float)"), self.updateImage)
-        self.connect (self.engine, SIGNAL("thread_completed()"), self.endCrunching)
-        self.connect (self.engine, SIGNAL("vector_created(PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
-        self.connect (self.engine, SIGNAL("line_created  (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
+        self.__engine = REngineThread (self.image, self.widget.getNormalMatrix (), self.widget.getFovy ())
+        self.__engine.setModel (self.__model)
+        self.connect (self.__engine, SIGNAL("update (float)"), self.updateImage)
+        self.connect (self.__engine, SIGNAL("thread_completed()"), self.endCrunching)
+        self.connect (self.__engine, SIGNAL("inters_created (PyQt_PyObject, PyQt_PyObject)"),          self.widget.addIntersection)
+        self.connect (self.__engine, SIGNAL("vector_created (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
+        self.connect (self.__engine, SIGNAL("line_created   (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
         
-        self.engine.start ()
+        self.__engine.start ()
     
     def endCrunching (self):
         self.renderBtn.setDisabled (False)
         self.stopBtn.setDisabled   (True)
         self.progressBar.setValue  (100)
-    def updateImage    (self, e):
+    def updateImage (self, e):
         self.pixmap_item = self.label_view.setPixmap (QPixmap.fromImage (self.image))
         self.progressBar.setValue (int(100*e))
     def displayGLMatrix (self, e):

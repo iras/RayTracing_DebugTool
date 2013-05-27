@@ -33,6 +33,7 @@ class REngineThread (QThread):
         
         if   self.__width  > self.__height and self.__height > 0:  self.__aspect_ratio = float(self.__width)/float(self.__height)
         elif self.__height > self.__width  and self.__width  > 0:  self.__aspect_ratio = float(self.__height)/float(self.__width)
+        elif self.__height == self.__width and self.__width  > 0:  self.__aspect_ratio = 1.0
         else: raise sys.exit ("*** Something wrong with the chosen resolution. Width = " + str(self.__width) + "  Height = " + str(self.__height))
         
         self.__engine_mtools = MathTools.Tools (self.__normal_mtx)
@@ -42,11 +43,14 @@ class REngineThread (QThread):
         self.carry_on = True
         
         # custom signals
-        self.__SIGNAL_Update          = SIGNAL ('update(float)')
-        self.__SIGNAL_VectorCreated   = SIGNAL ('vector_created (PyQt_PyObject, PyQt_PyObject, QString)')
-        self.__SIGNAL_LineCreated     = SIGNAL ('line_created   (PyQt_PyObject, PyQt_PyObject, QString)')
-        self.__SIGNAL_ThreadCompleted = SIGNAL ('thread_completed()')
+        self.__SIGNAL_Update           = SIGNAL ('update(float)')
+        self.__SIGNAL_IntersectCreated = SIGNAL ('inters_created (PyQt_PyObject, PyQt_PyObject)')
+        self.__SIGNAL_VectorCreated    = SIGNAL ('vector_created (PyQt_PyObject, PyQt_PyObject, QString)')
+        self.__SIGNAL_LineCreated      = SIGNAL ('line_created   (PyQt_PyObject, PyQt_PyObject, QString)')
+        self.__SIGNAL_ThreadCompleted  = SIGNAL ('thread_completed()')
         
+        self.__poly_model_e = None
+        self.__poly_list_e  = []
     
     
     def __del__(self):
@@ -92,6 +96,10 @@ class REngineThread (QThread):
                                  world_ray[1] - self.__world_origin[1],
                                  world_ray[2] - self.__world_origin[2]]
                 
+                ray_dir = [- 2 + world_ray[0],
+                           - 2 + world_ray[1],
+                           - 2 + world_ray[2]]
+                
                 self.__image.setPixel (i, j, qRgb ((ff * (a + ray_direction[0]) * h), (ff * (a + ray_direction[1]) * h), 0))
                 
                 if j%100 == 0 and i%100 == 0: # display to screen every 10 lines 10 pixels apart.
@@ -100,6 +108,8 @@ class REngineThread (QThread):
                     self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, world_ray, QString('o'))
                     # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type
                     self.emit (self.__SIGNAL_VectorCreated, self.__world_origin, world_ray, QString('d'))
+                    # fire inters_created signal : payload -> position in space, color
+                    #self.emit (self.__SIGNAL_IntersectCreated, ray_dir, [0,0,255])
             
             if j%10 == 0: # display to screen every 10 lines
                 self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
@@ -115,6 +125,14 @@ class REngineThread (QThread):
     
     def setCarryOnFlag (self, boo):
         '''
-        setter. This methods puts the break on the rendering if boo is set to False.
+        setter. This method allows putting the break onto the rendering process if boo is set to False.
         '''
         self.carry_on = boo
+    
+    
+    def setModel (self, model):
+        '''
+        setter. This method transfers a copy of the model (polygons list) to the REngineThread class instance.
+        '''
+        self.__poly_model_e = model
+        self.__poly_list_e  = model.getPolyListCopy ()
