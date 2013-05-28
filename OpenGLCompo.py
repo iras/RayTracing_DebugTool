@@ -84,7 +84,7 @@ class OGLViewer (QGLWidget):
         self.__arrow_len    = 2.0
         
         self.__lines_list   = []
-        self.__l_param      = -200.0
+        self.__l_param      = 200.0
         
         self.__intersections_list = []
         
@@ -258,6 +258,20 @@ class OGLViewer (QGLWidget):
             glVertex3f (bl[0],bl[1],bl[2]);   glVertex3f (tl[0],tl[1],tl[2])
             glEnd ()
     
+    def displayObjects (self):
+        
+        glClear (GL_COLOR_BUFFER_BIT)
+        
+        for poly in self.__poly_list:
+            
+            p0 = poly[0];  p1 = poly[1];  p2 = poly[2]
+            
+            glBegin (GL_TRIANGLES)
+            glVertex3f (p0.x(), p0.y(), p0.z())
+            glVertex3f (p1.x(), p1.y(), p1.z())
+            glVertex3f (p2.x(), p2.y(), p2.z())
+            glEnd ()
+    
     def displayIntersections (self):
         
         for intsect in self.__intersections_list:
@@ -266,26 +280,10 @@ class OGLViewer (QGLWidget):
             c = intsect[1]
             # Draw a translated solid sphere
             glPushMatrix ()
-            glRotatef (10, 0, 0.5, 1)
             glTranslatef (p[0], p[1], p[2])
             glColor3f    (c[0], c[1], c[2])
             glutSolidSphere (GLdouble (0.05), 9, 9)
             glPopMatrix ()
-    
-    def displayObjects (self):
-        
-        glClear (GL_COLOR_BUFFER_BIT)
-        
-        for poly in self.__poly_list:
-            
-            p0 = poly[0]
-            p1 = poly[1]
-            p2 = poly[2]
-            glBegin (GL_TRIANGLES)
-            glVertex3f (p0.x(), p0.y(), p0.z())
-            glVertex3f (p1.x(), p1.y(), p1.z())
-            glVertex3f (p2.x(), p2.y(), p2.z())
-            glEnd()
     
     def displayLines (self):
         
@@ -298,12 +296,16 @@ class OGLViewer (QGLWidget):
             glBegin (GL_LINES)
             glColor3ub (255, 0, 0)
             glVertex3f (p[0], p[1], p[2])
+            
+            # open line
             if   t=='o':
-                glVertex3f (self.__l_param*(p[0]-d[0]) + d[0],
-                            self.__l_param*(p[1]-d[1]) + d[1],
-                            self.__l_param*(p[2]-d[2]) + d[2])
+                glVertex3f (self.__l_param*d[0] + p[0],
+                            self.__l_param*d[1] + p[1],
+                            self.__l_param*d[2] + p[2])
+            # point-to-point line
             elif t=='p':
                 glVertex3f (d[0], d[1], d[2])
+            
             else: raise sys.exit ('*** Unrecognised line type : "' + t + '"')
             
             glEnd ()
@@ -314,7 +316,7 @@ class OGLViewer (QGLWidget):
             
             p = arrow[0]      # arrow position  (3-list)
             d = arrow[1]      # arrow direction (3-list)
-            t = str(arrow[2]) # arrow type (i:incident, d:departing)
+            t = str(arrow[2]) # arrow type (i:inwards, o:outwards)
             
             # scale parameters
             scale_x = 0.01
@@ -323,8 +325,8 @@ class OGLViewer (QGLWidget):
             t_z     = scale_z * self.__arrow_len
             
             # arrow type
-            if   t=='d': add_t = 0
-            elif t=='i': add_t = t_z*2.5
+            if   t=='o': add_t = 0
+            elif t=='i': add_t = -t_z*2.5
             else: raise sys.exit ('*** Unrecognised arrow type : "' + t + '"')
             
             glPushMatrix ()
@@ -332,18 +334,17 @@ class OGLViewer (QGLWidget):
             # arrow shaft
             glColor3f (0.5, 0.5, 0)
             glTranslatef (p[0], p[1], p[2])
-            angles_from_orient = self.__compo_mtools.alignZAxisToVector (p[0]-d[0], p[1]-d[1], p[2]-d[2])
-            glRotatef (                 -180,  0, 0, 1)
+            angles_from_orient = self.__compo_mtools.alignZAxisToVector (d[0], d[1], d[2])
+            glRotatef (                  180,  0, 0, 1)
             glRotatef (angles_from_orient[1],  0, 1, 0)
             glRotatef (angles_from_orient[0],  1, 0, 0)
             glScale (scale_x, scale_y, scale_z)
-            glTranslatef (0, 0, -t_z+add_t)
+            glTranslatef (0, 0, t_z+add_t)
             glutSolidCube (GLdouble(self.__arrow_len))
             
             # arrow head (remember : the head's transformations are built on top of the arrow shaft's and are not independent) 
             glColor3f (0.6, 0.6, 0)
-            glTranslatef (0, 0, -t_z)
-            glRotatef (                  180,  1, 0, 0)
+            glTranslatef (0, 0, t_z)
             glutSolidCone (GLdouble(t_z*5), GLdouble(t_z*0.5), GLint(6), GLint(1))
             
             glPopMatrix ()

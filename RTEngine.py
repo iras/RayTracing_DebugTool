@@ -64,13 +64,64 @@ class REngineThread (QThread):
         '''
         usual thread method 'run'
         '''
-        self.renderPlainDirections ()
+        self.renderTest1 ()
         #self.terminate ()
     
     
-    def renderPlainDirections (self):
+    
+    
+    
+    
+    
+    
+    def intersectRayWithModels (self, origin, direction):
         '''
-        test render method
+        method performing ray-triangle intersection (Moller-Trumbore algorithm)
+        '''
+        
+        
+        intersection = None
+        
+        
+        return intersection
+    
+    def setCarryOnFlag (self, boo):
+        '''
+        setter. This method allows putting the break onto the rendering process if boo is set to False.
+        '''
+        self.carry_on = boo
+    
+    
+    def setModel (self, model):
+        '''
+        setter. This method transfers a copy of the model (polygons list) to the REngineThread class instance.
+        '''
+        self.__poly_model_e = model
+        self.__poly_list_e  = model.getPolyListCopy ()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+    
+    
+    def renderTest1 (self):
+        '''
+        test (1) render method.
+        
+        It just "renders" plain vector directions from the center of the camera.
         '''
         self.carry_on = True
         
@@ -92,24 +143,34 @@ class REngineThread (QThread):
                 world_ray = self.__engine_mtools.cameraToWorldTransform (w_param, h_param, m)
                 #world_ray = self.__engine_mtools.normalise (world_ray)
                 
-                ray_direction = [world_ray[0] - self.__world_origin[0],
-                                 world_ray[1] - self.__world_origin[1],
-                                 world_ray[2] - self.__world_origin[2]]
                 
-                ray_dir = [- 2 + world_ray[0],
-                           - 2 + world_ray[1],
-                           - 2 + world_ray[2]]
                 
-                self.__image.setPixel (i, j, qRgb ((ff * (a + ray_direction[0]) * h), (ff * (a + ray_direction[1]) * h), 0))
+                ray_dir = [world_ray[0] - self.__world_origin[0],
+                           world_ray[1] - self.__world_origin[1],
+                           world_ray[2] - self.__world_origin[2]]
+                
+                intersections_pos = [self.__world_origin[0] + ray_dir[0],
+                                     self.__world_origin[1] + ray_dir[1],
+                                     self.__world_origin[2] + ray_dir[2]]
+                
+                
+                
+                self.__image.setPixel (i, j, qRgb ((ff * (a + ray_dir[0]) * h), (ff * (a + ray_dir[1]) * h), 0))
+                '''
+                if self.intersectRayWithModels (self.__world_origin, world_ray) != None:
+                    self.__image.setPixel (i, j, qRgb (0, 0, 0))
+                else:
+                    self.__image.setPixel (i, j, qRgb (255, 255, 255))
+                '''
                 
                 if j%100 == 0 and i%100 == 0: # display to screen every 10 lines 10 pixels apart.
                     # fire line_created signal : payload -> line origin in space, line direction, line type
                     # position = self.__world_origin, orientation = world_ray
-                    self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, world_ray, QString('o'))
-                    # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type
-                    self.emit (self.__SIGNAL_VectorCreated, self.__world_origin, world_ray, QString('d'))
+                    self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, ray_dir, QString('o'))
+                    # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
+                    self.emit (self.__SIGNAL_VectorCreated, self.__world_origin, ray_dir, QString('o'))
                     # fire inters_created signal : payload -> position in space, color
-                    #self.emit (self.__SIGNAL_IntersectCreated, ray_dir, [0,0,255])
+                    self.emit (self.__SIGNAL_IntersectCreated, intersections_pos, [0,0,255])
             
             if j%10 == 0: # display to screen every 10 lines
                 self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
@@ -121,18 +182,3 @@ class REngineThread (QThread):
         
         if self.carry_on: # if and only if the rendering was completed then fire this signal away.
             self.emit (self.__SIGNAL_ThreadCompleted)
-    
-    
-    def setCarryOnFlag (self, boo):
-        '''
-        setter. This method allows putting the break onto the rendering process if boo is set to False.
-        '''
-        self.carry_on = boo
-    
-    
-    def setModel (self, model):
-        '''
-        setter. This method transfers a copy of the model (polygons list) to the REngineThread class instance.
-        '''
-        self.__poly_model_e = model
-        self.__poly_list_e  = model.getPolyListCopy ()

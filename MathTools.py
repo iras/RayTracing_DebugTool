@@ -25,7 +25,7 @@ class Tools:
     
     def cameraToWorldTransform (self, vx, vy, vz):
         '''
-        this method right multiplies the camera normal transform matrix by a given vector (vx, vy, vz,1)
+        this method right multiplies the camera "normal transform" matrix by a given vector (vx, vy, vz,1)
         and returns a 3-list, the last bottom value=1 is not returned.
         '''
         m_ref = self.__normal_mtx.data () # retrieves the 16 items in this matrix and copies them to values in row-major order.
