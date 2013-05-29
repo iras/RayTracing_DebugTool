@@ -16,11 +16,15 @@ class Model:
         '''
         Model constructor.
         '''
+        self.__pid = 0 # polygon id counter
+        
+        
         self.__poly_list = [] # by poly I mean triangle.
         
         self.__poly_list.append ([QVector3D (2.0,  2.0, 2.0),
                                   QVector3D (2.0, -2.0, 2.0),
-                                  QVector3D (-2.0,-2.0, 2.0)])
+                                  QVector3D (-2.0,-2.0, 2.0),
+                                  self.__pid])
     
     def getPolyListCopy (self):
         
