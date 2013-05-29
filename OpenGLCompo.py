@@ -294,7 +294,7 @@ class OGLViewer (QGLWidget):
             t = str(line[2])  # line type (o:open line, p:point-to-point line)
             
             glBegin (GL_LINES)
-            glColor3ub (255, 0, 0)
+            glColor3ub (255, 255, 255)
             glVertex3f (p[0], p[1], p[2])
             
             # open line
@@ -343,7 +343,7 @@ class OGLViewer (QGLWidget):
             glutSolidCube (GLdouble(self.__arrow_len))
             
             # arrow head (remember : the head's transformations are built on top of the arrow shaft's and are not independent) 
-            glColor3f (0.6, 0.6, 0)
+            glColor3f (0.4, 0.4, 0)
             glTranslatef (0, 0, t_z)
             glutSolidCone (GLdouble(t_z*5), GLdouble(t_z*0.5), GLint(6), GLint(1))
             

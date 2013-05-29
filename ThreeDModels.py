@@ -25,6 +25,12 @@ class Model:
                                   QVector3D (2.0, -2.0, 2.0),
                                   QVector3D (-2.0,-2.0, 2.0),
                                   self.__pid])
+        
+        self.__pid += 1
+        self.__poly_list.append ([QVector3D (4.0,  4.0, 4.0),
+                                  QVector3D (4.0,  1.0, 4.0),
+                                  QVector3D (10.0,  2.0, 4.0),
+                                  self.__pid])
     
     def getPolyListCopy (self):
         

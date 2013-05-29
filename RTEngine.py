@@ -106,22 +106,24 @@ class REngineThread (QThread):
                     
                     tmp_isect_param = self.intersectRayTriangles (self.__world_origin, ray_dir_norm)
                     if tmp_isect_param == None:
-                        self.__image.setPixel (i, j, qRgb (255, 255, 255))
-                    else:
                         self.__image.setPixel (i, j, qRgb (0, 0, 0))
+                    else:
+                        self.__image.setPixel (i, j, qRgb (255, 255, 0))
                         
-                        # fire line_created signal : payload -> line origin in space, line direction, line type
-                        # position = self.__world_origin, orientation = world_ray
-                        self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, ray_dir_norm, QString('o'))
-                        # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
-                        self.emit (self.__SIGNAL_VectorCreated, self.__world_origin, ray_dir_norm, QString('o'))
+                        # position = self.__world_origin, orientation = ray_dir_norm
                         
-                        
+                        # fire inters_created signal : payload -> position in space, color
                         intersections_pos = [self.__world_origin[0] + ray_dir_norm[0]*tmp_isect_param,
                                              self.__world_origin[1] + ray_dir_norm[1]*tmp_isect_param,
                                              self.__world_origin[2] + ray_dir_norm[2]*tmp_isect_param]
-                        # fire inters_created signal : payload -> position in space, color
+                        
+                        # fire line_created signal : payload -> line origin in space, line direction, line type
+                        self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, intersections_pos, QString('p'))
+                        
                         self.emit (self.__SIGNAL_IntersectCreated, intersections_pos, [0,0,255])
+                        
+                        # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
+                        self.emit (self.__SIGNAL_VectorCreated, intersections_pos, ray_dir_norm, QString('i'))                        
             
             if j%10 == 0: # display to screen every 10 lines
                 self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
