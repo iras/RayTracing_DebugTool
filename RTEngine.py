@@ -51,6 +51,8 @@ class REngineThread (QThread):
         
         self.__poly_model_e = None
         self.__poly_list_e  = []
+        
+        
     
     
     def __del__(self):

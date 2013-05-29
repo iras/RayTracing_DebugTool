@@ -50,6 +50,9 @@ class OGLViewer (QGLWidget):
         
         # matrix changed signal. The signal's payload is the matrix itself.
         self.__GLMatrixChanged = SIGNAL ("MatrixChanged (PyQt_PyObject)")
+        
+        self.__compo_light_pos = QVector3D (.3,.2,.1)
+        self.__AmbientMaterial = QVector3D ( .2, .2, .2)
     
     
     def _init_camera_vars (self):
@@ -242,6 +245,7 @@ class OGLViewer (QGLWidget):
     
     def displayCamera (self):
         
+        glLineWidth (1.0)
         for cam in self.__camera_list:
             
             cc=cam[0];  tl=cam[1];  tr=cam[2];  bl=cam[3];  br=cam[4]
@@ -262,11 +266,17 @@ class OGLViewer (QGLWidget):
         
         glClear (GL_COLOR_BUFFER_BIT)
         
+        glEnable (GL_DEPTH_TEST)
+        glDepthMask (GL_TRUE)
+        #glEnable (GL_CULL_FACE)
+        
         for poly in self.__poly_list:
             
             p0 = poly[0];  p1 = poly[1];  p2 = poly[2]
             
             glBegin (GL_TRIANGLES)
+            col = .4 + 0.5*QVector3D.dotProduct (poly[3], self.__compo_light_pos)
+            glColor3f   (col, col, col)
             glVertex3f (p0.x(), p0.y(), p0.z())
             glVertex3f (p1.x(), p1.y(), p1.z())
             glVertex3f (p2.x(), p2.y(), p2.z())
@@ -282,11 +292,12 @@ class OGLViewer (QGLWidget):
             glPushMatrix ()
             glTranslatef (p[0], p[1], p[2])
             glColor3f    (c[0], c[1], c[2])
-            glutSolidSphere (GLdouble (0.05), 9, 9)
+            glutSolidSphere (GLdouble (0.03), 9, 9)
             glPopMatrix ()
     
     def displayLines (self):
         
+        glLineWidth (1.0)
         for line in self.__lines_list:
             
             p = line[0]       # line initial position  (3-list)
@@ -351,6 +362,7 @@ class OGLViewer (QGLWidget):
     
     def drawGrid (self):
         
+        glLineWidth (1.0)
         for i in range (-10, 11):
             glBegin (GL_LINES)
             glColor3ub (185, 185, 185)
@@ -362,6 +374,7 @@ class OGLViewer (QGLWidget):
     
     def drawFixedOriginAxes (self):
         
+        glLineWidth (3.0)
         glBegin (GL_LINES)
         glColor3ub (250, 0, 0); glVertex3f (0, 0, 0); glVertex3f (0, 0, 5)
         glColor3ub (255, 150, 150); glVertex3f (0, 0, 5); glVertex3f (0, 0, 10); glEnd ()
