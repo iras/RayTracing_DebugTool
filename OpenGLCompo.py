@@ -374,7 +374,7 @@ class OGLViewer (QGLWidget):
     
     def drawFixedOriginAxes (self):
         
-        glLineWidth (3.0)
+        glLineWidth (2.0)
         glBegin (GL_LINES)
         glColor3ub (250, 0, 0); glVertex3f (0, 0, 0); glVertex3f (0, 0, 5)
         glColor3ub (255, 150, 150); glVertex3f (0, 0, 5); glVertex3f (0, 0, 10); glEnd ()

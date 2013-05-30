@@ -40,6 +40,7 @@ class REngineThread (QThread):
         self.__angle  = self.__engine_mtools.getAngle (self.__fovy)
         self.__world_origin = self.__engine_mtools.cameraToWorldTransform (0, 0, 0)
         
+        # main loop state
         self.carry_on = True
         
         # custom signals
@@ -51,8 +52,6 @@ class REngineThread (QThread):
         
         self.__poly_model_e = None
         self.__poly_list_e  = []
-        
-        
     
     
     def __del__(self):
@@ -95,8 +94,6 @@ class REngineThread (QThread):
                 
                 world_ray = self.__engine_mtools.cameraToWorldTransform (w_param, h_param, m)
                 
-                
-                
                 ray_dir = [world_ray[0] - self.__world_origin[0],
                            world_ray[1] - self.__world_origin[1],
                            world_ray[2] - self.__world_origin[2]]
@@ -127,7 +124,7 @@ class REngineThread (QThread):
                         # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
                         self.emit (self.__SIGNAL_VectorCreated, intersections_pos, ray_dir_norm, QString('i'))                        
             
-            if j%10 == 0: # display to screen every 10 lines
+            if j%10 == 0: # update screen every 10 lines
                 self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
             
             if not self.carry_on:

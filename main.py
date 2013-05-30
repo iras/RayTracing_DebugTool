@@ -39,6 +39,8 @@ class Ui_Form (QWidget):
         
         self.__engine = None
         self.__model  = Model ()
+        
+        self.image = QImage (720, 450, QImage.Format_RGB888)
     
     def wireOGLViewer (self):
         
@@ -89,21 +91,8 @@ class Ui_Form (QWidget):
         sizePolicy.setHeightForWidth (self.label_view.sizePolicy().hasHeightForWidth())
         self.label_view.setSizePolicy (sizePolicy)
         self.label_view.setObjectName (_fromUtf8 ("label_view"))
-
-
-        
-        self.image = QImage (720, 450, QImage.Format_RGB888)
-        color = QColor (250, 250, 250)
-        self.image.fill (color)
-        
-        for i in range (0, 200, 20):
-            for x in range (i, i+20):
-                for y in range (i, i+20):
-                    self.image.setPixel (x,y, qRgb (0, 0, 0))
-                            
+        self.initLabel ()          
         self.pixmap_item = self.label_view.setPixmap (QPixmap.fromImage (self.image))
-        
-        
         
         self.stopBtn = QPushButton (Form)
         self.stopBtn.setGeometry (QRect (830, 50, 51, 31))
@@ -152,10 +141,23 @@ class Ui_Form (QWidget):
         self.connect (self.stopBtn,         SIGNAL ("clicked()"),        self.stopRender)
         self.connect (self.arrowSizeSlider, SIGNAL ("sliderMoved(int)"), self.resizeArrows)
     
-    # listeners
+    def initLabel (self):
+        
+        color = QColor (250, 250, 250)
+        self.image.fill (color)
+        
+        '''
+        # test init
+        for i in range (0, 200, 20):
+            for x in range (i, i+20):
+                for y in range (i, i+20):
+                    self.image.setPixel (x,y, qRgb (0, 0, 0))
+        '''
+    
+    # listeners  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
     def resizeArrows (self, e):
-
+        
         self.widget.changeArrowsSize (e*0.5)
     
     def stopRender (self):
