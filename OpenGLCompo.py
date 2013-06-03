@@ -353,10 +353,12 @@ class OGLViewer (QGLWidget):
             glTranslatef (0, 0, t_z+add_t)
             glutSolidCube (GLdouble(self.__arrow_len))
             
-            # arrow head (remember : the head's transformations are built on top of the arrow shaft's and are not independent) 
-            glColor3f (0.4, 0.4, 0)
+            # arrow head
+            # REMEMBER ! The head's transformations are built on top of the arrow shaft's and are NOT independent !
+            # The reason for doing that is that the user can change the scale of the arrow from UI's slider.
+            glColor3f (0.6, 0.6, 0)
             glTranslatef (0, 0, t_z)
-            glutSolidCone (GLdouble(t_z*5), GLdouble(t_z*0.5), GLint(6), GLint(1))
+            glutSolidCone (GLdouble(t_z*5), GLdouble(t_z*0.5), GLint(6), GLint(2))
             
             glPopMatrix ()
     

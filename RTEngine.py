@@ -65,15 +65,13 @@ class REngineThread (QThread):
         '''
         usual thread method 'run'
         '''
-        self.renderTest2 ()
+        self.render ()
         #self.terminate ()
     
     
-    def renderTest2 (self):
+    def render (self):
         '''
-        test (2) render method.
-        
-        It plainly renders the camera rays intersections with any polygon in the scene.
+        this method provides the chosen view's camera rays to the core_render method.
         '''
         self.carry_on = True
         
@@ -100,29 +98,9 @@ class REngineThread (QThread):
                 ray_dir_norm = self.__engine_mtools.normalise (ray_dir)
                 
                 
-                
-                if j%10 == 0 and i%10 == 0: # display to screen every 10 lines 10 pixels apart.
-                    
-                    tmp_isect_param = self.intersectRayTriangles (self.__world_origin, ray_dir_norm)
-                    if tmp_isect_param == None:
-                        self.__image.setPixel (i, j, qRgb (0, 0, 0))
-                    else:
-                        self.__image.setPixel (i, j, qRgb (255, 255, 0))
-                        
-                        # position = self.__world_origin, orientation = ray_dir_norm
-                        
-                        # fire inters_created signal : payload -> position in space, color
-                        intersections_pos = [self.__world_origin[0] + ray_dir_norm[0]*tmp_isect_param,
-                                             self.__world_origin[1] + ray_dir_norm[1]*tmp_isect_param,
-                                             self.__world_origin[2] + ray_dir_norm[2]*tmp_isect_param]
-                        
-                        # fire line_created signal : payload -> line origin in space, line direction, line type
-                        self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, intersections_pos, QString('p'))
-                        
-                        self.emit (self.__SIGNAL_IntersectCreated, intersections_pos, [0,0,255])
-                        
-                        # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
-                        self.emit (self.__SIGNAL_VectorCreated, intersections_pos, ray_dir_norm, QString('i'))                        
+                # core rendering
+                self.core_render_test2 (i, j, ray_dir_norm, ray_dir)
+                                        
             
             if j%10 == 0: # update screen every 10 lines
                 self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
@@ -135,6 +113,33 @@ class REngineThread (QThread):
         if self.carry_on: # if and only if the rendering was completed then fire this signal away.
             self.emit (self.__SIGNAL_ThreadCompleted)
     
+    
+    def core_render_test2 (self, i, j, ray_dir_norm, ray_dir):
+        '''
+        This method plainly displays some camera rays intersections with any polygon in the scene. No optimisation here, just brute force approach.
+        '''
+        if j%10 == 0 and i%10 == 0: # display to screen every 10 lines 10 pixels apart.
+                    
+            tmp_isect_param = self.intersectRayTriangles (self.__world_origin, ray_dir_norm)
+            if tmp_isect_param == None:
+                self.__image.setPixel (i, j, qRgb (0, 0, 0))
+            else:
+                self.__image.setPixel (i, j, qRgb (255, 255, 0))
+                
+                # position = self.__world_origin, orientation = ray_dir_norm
+                
+                # fire inters_created signal : payload -> position in space, color
+                intersections_pos = [self.__world_origin[0] + ray_dir_norm[0]*tmp_isect_param,
+                                     self.__world_origin[1] + ray_dir_norm[1]*tmp_isect_param,
+                                     self.__world_origin[2] + ray_dir_norm[2]*tmp_isect_param]
+                
+                # fire line_created signal : payload -> line origin in space, line direction, line type
+                self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, intersections_pos, QString('p'))
+                
+                self.emit (self.__SIGNAL_IntersectCreated, intersections_pos, [0,0,255])
+                
+                # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
+                self.emit (self.__SIGNAL_VectorCreated, intersections_pos, ray_dir_norm, QString('i'))
     
     
     
@@ -227,61 +232,23 @@ class REngineThread (QThread):
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
-    
-    
-    
-    def renderTest1 (self):
+    def core_render_test1 (self, i, j, ray_dir_norm, ray_dir):
         '''
-        test (1) render method.
-        
-        It just "renders" plain vector directions from the center of the camera.
+        This method just "renders" plain vector directions from the center of the camera.
         '''
-        self.carry_on = True
+        ff = 255;   a = 1;  h = 0.5;
         
-        inv_w = 2.0/self.__width
-        inv_h = 2.0/self.__height
-        h = 0.5
-        a = 1
-        m = -1.0
-        ff = 255
+        intersections_pos = [self.__world_origin[0] + ray_dir[0],
+                             self.__world_origin[1] + ray_dir[1],
+                             self.__world_origin[2] + ray_dir[2]]
+                
+        self.__image.setPixel (i, j, qRgb ((ff * (a + ray_dir[0]) * h), (ff * (a + ray_dir[1]) * h), 0))
         
-        angle_times_aspect_ratio = self.__angle * self.__aspect_ratio
-        
-        for j in range (0, self.__height):
-            for i in range (0, self.__width):
-                
-                w_param = ((h + i)*inv_w-1) * angle_times_aspect_ratio
-                h_param = (1-(h + j)*inv_h) * self.__angle
-                
-                world_ray = self.__engine_mtools.cameraToWorldTransform (w_param, h_param, m)
-                
-                ray_dir = [world_ray[0] - self.__world_origin[0],
-                           world_ray[1] - self.__world_origin[1],
-                           world_ray[2] - self.__world_origin[2]]
-                #ray_dir = self.__engine_mtools.normalise (ray_dir)
-                
-                intersections_pos = [self.__world_origin[0] + ray_dir[0],
-                                     self.__world_origin[1] + ray_dir[1],
-                                     self.__world_origin[2] + ray_dir[2]]
-                
-                self.__image.setPixel (i, j, qRgb ((ff * (a + ray_dir[0]) * h), (ff * (a + ray_dir[1]) * h), 0))
-                
-                if j%100 == 0 and i%100 == 0: # display to screen every 10 lines 10 pixels apart.
-                    # fire line_created signal : payload -> line origin in space, line direction, line type
-                    # position = self.__world_origin, orientation = world_ray
-                    self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, ray_dir, QString('o'))
-                    # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
-                    self.emit (self.__SIGNAL_VectorCreated, self.__world_origin, ray_dir, QString('o'))
-                    # fire inters_created signal : payload -> position in space, color
-                    self.emit (self.__SIGNAL_IntersectCreated, intersections_pos, [0,0,255])
-            
-            if j%10 == 0: # display to screen every 10 lines
-                self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
-            
-            if not self.carry_on:
-                break
-        
-        self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
-        
-        if self.carry_on: # if and only if the rendering was completed then fire this signal away.
-            self.emit (self.__SIGNAL_ThreadCompleted)
+        if j%100 == 0 and i%100 == 0: # display to screen every 10 lines 10 pixels apart.
+            # fire line_created signal : payload -> line origin in space, line direction, line type
+            # position = self.__world_origin, orientation = world_ray
+            self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, ray_dir, QString('o'))
+            # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
+            self.emit (self.__SIGNAL_VectorCreated, self.__world_origin, ray_dir, QString('o'))
+            # fire inters_created signal : payload -> position in space, color
+            self.emit (self.__SIGNAL_IntersectCreated, intersections_pos, [0,0,ff])
