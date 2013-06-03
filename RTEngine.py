@@ -102,8 +102,8 @@ class REngineThread (QThread):
                 self.core_render_test2 (i, j, ray_dir_norm, ray_dir)
                                         
             
-            if j%10 == 0: # update screen every 10 lines
-                self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
+            # update screen every 10 lines
+            if j%10==0:  self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
             
             if not self.carry_on:
                 break

@@ -74,7 +74,7 @@ class Ui_Form (QWidget):
         Form.setObjectName (_fromUtf8("Form"))
         Form.resize (971, 930)
         self.plainTextEdit = QPlainTextEdit (Form)
-        self.plainTextEdit.setGeometry (QRect (740, 100, 241, 791))
+        self.plainTextEdit.setGeometry (QRect (740, 280, 221, 611))
         self.plainTextEdit.setObjectName (_fromUtf8 ("plainTextEdit"))
         self.plainTextEdit.setFont (font)
         
@@ -94,16 +94,41 @@ class Ui_Form (QWidget):
         self.initLabel ()          
         self.pixmap_item = self.label_view.setPixmap (QPixmap.fromImage (self.image))
         
-        self.stopBtn = QPushButton (Form)
-        self.stopBtn.setGeometry (QRect (830, 50, 51, 31))
-        self.stopBtn.setFont (font)
-        self.stopBtn.setObjectName (_fromUtf8 ("stop"))
-        self.stopBtn.setDisabled (True)
+        # buttons definitions
         
-        self.renderBtn = QPushButton (Form)
-        self.renderBtn.setGeometry (QRect (740, 50, 91, 31))
-        self.renderBtn.setFont (font)
-        self.renderBtn.setObjectName (_fromUtf8 ("render"))
+        self.renderBtn    = QPushButton (Form)
+        self.pauseBtn     = QPushButton (Form)
+        self.stopBtn      = QPushButton (Form)
+        self.upBtn        = QPushButton (Form)
+        self.downBtn      = QPushButton (Form)
+        self.moreDownBtn  = QPushButton (Form)
+        self.moreUpBtn    = QPushButton (Form)
+        self.rightBtn     = QPushButton (Form)
+        self.moreRightBtn = QPushButton (Form)
+        self.leftBtn      = QPushButton (Form)
+        self.furtherLeft  = QPushButton (Form)
+        self.grid_switch  = QPushButton (Form)
+        
+        buttons_properties_list = [[self.renderBtn,   QRect (740, 140, 61, 21), "render",           True],
+                                   [self.pauseBtn,    QRect (740, 120, 61, 21), "pause",            False],
+                                   [self.stopBtn,     QRect (740, 100, 61, 21), "stop",             False],
+                                   [self.upBtn,       QRect (820, 120, 21, 21), "one_row_up",       False],
+                                   [self.downBtn,     QRect (820, 140, 21, 21), "one_row_down",     False],
+                                   [self.moreDownBtn, QRect (820, 160, 21, 21), "ten_rows_down",    False],
+                                   [self.moreUpBtn,   QRect (820, 100, 21, 21), "ten_rows_up",      False],
+                                   [self.rightBtn,    QRect (780, 180, 21, 21), "one_column_right", False],
+                                   [self.moreRightBtn,QRect (800, 180, 21, 21), "ten_columns_right",False],
+                                   [self.leftBtn,     QRect (760, 180, 21, 21), "one_column_left",  False],
+                                   [self.furtherLeft, QRect (740, 180, 21, 21), "ten_columns_left", False],
+                                   [self.grid_switch, QRect (870, 230, 91, 31), "grid_switch",      False]]
+        
+        for button in buttons_properties_list:
+            button[0].setGeometry (button[1])
+            button[0].setFont (font)
+            button[0].setObjectName (_fromUtf8 (button[2]))
+            button[0].setEnabled (button[3])
+        
+        # other UI elements
         
         self.progressBar = QProgressBar (Form)
         self.progressBar.setGeometry (QRect (740, 901, 221, 20))
@@ -112,14 +137,14 @@ class Ui_Form (QWidget):
         self.progressBar.setMinimum (0)
         self.progressBar.setMaximum (100)
         
-        self.label_slider = QLabel (Form)
-        self.label_slider.setEnabled (True)
-        self.label_slider.setGeometry (QRect(880, 80, 81, 16))
-        self.label_slider.setFont(font)
-        self.label_slider.setObjectName (_fromUtf8("label_slider"))
+        self.slider_label = QLabel (Form)
+        self.slider_label.setGeometry (QRect(900, 260, 61, 16))
+        self.slider_label.setFont(font)
+        self.slider_label.setObjectName (_fromUtf8("slider_label"))
+        self.slider_label.setEnabled (True)
         
         self.arrowSizeSlider = QSlider (Form)
-        self.arrowSizeSlider.setGeometry (QRect(750, 80, 121, 22))
+        self.arrowSizeSlider.setGeometry (QRect (740, 258, 151, 22))
         self.arrowSizeSlider.setMinimum (2)
         self.arrowSizeSlider.setMaximum (40)
         self.arrowSizeSlider.setSingleStep (1)
@@ -133,9 +158,21 @@ class Ui_Form (QWidget):
     def retranslateUi (self, Form):
         
         Form.setWindowTitle       (_translate ("Form", "RayTracing Debugging Tool", None))
-        self.renderBtn.setText    (_translate ("Form", "Render",                    None))
-        self.stopBtn.setText      (_translate ("Form", "Stop",                      None))
-        self.label_slider.setText (_translate ("Form", "Arrows size",               None))
+        
+        self.renderBtn.setText    (_translate ("Form", "Render", None))
+        self.pauseBtn.setText     (_translate ("Form", "Pause", None))
+        self.stopBtn.setText      (_translate ("Form", "Stop", None))
+        self.upBtn.setText        (_translate ("Form", "^", None))
+        self.downBtn.setText      (_translate ("Form", "v", None))
+        self.moreDownBtn.setText  (_translate ("Form", "+", None))
+        self.moreUpBtn.setText    (_translate ("Form", "-", None))
+        self.rightBtn.setText     (_translate ("Form", ">", None))
+        self.moreRightBtn.setText (_translate ("Form", "+", None))
+        self.leftBtn.setText      (_translate ("Form", "<", None))
+        self.furtherLeft.setText  (_translate ("Form", "-", None))
+        
+        self.grid_switch.setText  (_translate ("Form", "Grid on/off", None))
+        self.slider_label.setText (_translate ("Form", "Arrows size", None))
         
         self.connect (self.renderBtn,       SIGNAL ("clicked()"),        self.clickRender)
         self.connect (self.stopBtn,         SIGNAL ("clicked()"),        self.stopRender)
