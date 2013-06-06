@@ -15,43 +15,47 @@ class REngineThread (QThread):
     (threaded) engine model class
     '''
     
-    def __init__(self, image, camera_normal_transform_mtx, fovy):
+    def __init__(self):
         '''
         REngineThread constructor.
         '''
         QThread.__init__ (self)
         
+        self.__Origin = [0, 0, 0]
+        self.__OriginWorld = []
+                
+        # main loop state
+        self.carry_on = True
+        
+        # custom signals
+        self.__SIGNAL_Update          = SIGNAL ('update(float)')
+        self.__SIGNAL_ThreadCompleted = SIGNAL ('thread_completed()')
+        self.__SIGNAL_IntersCreated   = SIGNAL ('inters_created (PyQt_PyObject, PyQt_PyObject)')
+        self.__SIGNAL_VectorCreated   = SIGNAL ('vector_created (PyQt_PyObject, PyQt_PyObject, QString)')
+        self.__SIGNAL_LineCreated     = SIGNAL ('line_created   (PyQt_PyObject, PyQt_PyObject, QString)')
+        
+        self.__poly_model_e = None
+        self.__poly_list_e  = []
+    
+    def setImage (self, image):
+        
         self.__image  = image
         self.__width  = self.__image.width  ()
         self.__height = self.__image.height ()
-        
-        self.__fovy   = fovy
-        self.__normal_mtx = camera_normal_transform_mtx
-        
-        self.__Origin = [0, 0, 0]
-        self.__OriginWorld = []
         
         if   self.__width  > self.__height and self.__height > 0:  self.__aspect_ratio = float(self.__width)/float(self.__height)
         elif self.__height >  self.__width and self.__width  > 0:  self.__aspect_ratio = float(self.__height)/float(self.__width)
         elif self.__height == self.__width and self.__width  > 0:  self.__aspect_ratio = 1.0
         else: raise sys.exit ("*** Something wrong with the chosen resolution. Width = " + str(self.__width) + "  Height = " + str(self.__height))
+    
+    def setCameraNormalMatrix (self, camera_normal_transform_mtx, fovy):
         
+        self.__fovy = fovy
+        
+        self.__normal_mtx = camera_normal_transform_mtx
         self.__engine_mtools = MathTools.Tools (self.__normal_mtx)
         self.__angle  = self.__engine_mtools.getAngle (self.__fovy)
         self.__world_origin = self.__engine_mtools.cameraToWorldTransform (0, 0, 0)
-        
-        # main loop state
-        self.carry_on = True
-        
-        # custom signals
-        self.__SIGNAL_Update           = SIGNAL ('update(float)')
-        self.__SIGNAL_IntersectCreated = SIGNAL ('inters_created (PyQt_PyObject, PyQt_PyObject)')
-        self.__SIGNAL_VectorCreated    = SIGNAL ('vector_created (PyQt_PyObject, PyQt_PyObject, QString)')
-        self.__SIGNAL_LineCreated      = SIGNAL ('line_created   (PyQt_PyObject, PyQt_PyObject, QString)')
-        self.__SIGNAL_ThreadCompleted  = SIGNAL ('thread_completed()')
-        
-        self.__poly_model_e = None
-        self.__poly_list_e  = []
     
     
     def __del__(self):
@@ -136,7 +140,7 @@ class REngineThread (QThread):
                 # fire line_created signal : payload -> line origin in space, line direction, line type
                 self.emit (self.__SIGNAL_LineCreated,   self.__world_origin, intersections_pos, QString('p'))
                 
-                self.emit (self.__SIGNAL_IntersectCreated, intersections_pos, [0,0,255])
+                self.emit (self.__SIGNAL_IntersCreated, intersections_pos, [0,0,255])
                 
                 # fire vector_created signal : payload -> vector's origin in space, vector direction, vector's type (o:outwards, i:inwards)
                 self.emit (self.__SIGNAL_VectorCreated, intersections_pos, ray_dir_norm, QString('i'))

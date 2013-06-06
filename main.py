@@ -41,9 +41,23 @@ class Ui_Form (QWidget):
         self.__model  = Model ()
         
         self.image = QImage (720, 450, QImage.Format_RGB888)
-    
-    def wireOGLViewer (self):
         
+        self.__engine = REngineThread ()
+    
+    def wireEngineUp (self):
+        '''
+        this method connects the REngine's signals.
+        '''
+        self.connect (self.__engine, SIGNAL ("update (float)"), self.updateImage)
+        self.connect (self.__engine, SIGNAL ("thread_completed()"), self.endCrunching)
+        self.connect (self.__engine, SIGNAL ("inters_created (PyQt_PyObject, PyQt_PyObject)"),          self.widget.addIntersection)
+        self.connect (self.__engine, SIGNAL ("vector_created (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
+        self.connect (self.__engine, SIGNAL ("line_created   (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
+    
+    def wireOGLViewerUp (self):
+        '''
+        this method connects the REngine's signals.
+        '''
         self.widget.setModel (self.__model)
         
         QObject.connect (self.widget, SIGNAL ("MatrixChanged (PyQt_PyObject)"), self.displayGLMatrix)
@@ -51,7 +65,7 @@ class Ui_Form (QWidget):
         # call the function run regularly when the focus is on it. (60 FPS if interval = 20)
         QObject.connect (self.timer, SIGNAL ('timeout()'), self.widget.run)
     
-    def stopGLFrameRate (self):
+    def freezeGLFrameRate (self):
         
         self.timer.stop ()
     
@@ -84,7 +98,8 @@ class Ui_Form (QWidget):
         sizePolicy.setHeightForWidth (self.widget.sizePolicy().hasHeightForWidth())
         self.widget.setSizePolicy (sizePolicy)
         self.widget.setObjectName (_fromUtf8 ("widget"))
-        self.wireOGLViewer ()
+        self.wireOGLViewerUp ()
+        self.wireEngineUp ()
         
         self.label_view = QLabel (Form)
         self.label_view.setGeometry  (QRect (10, 470, 720, 450))
@@ -109,18 +124,18 @@ class Ui_Form (QWidget):
         self.furtherLeft  = QPushButton (Form)
         self.grid_switch  = QPushButton (Form)
         
-        buttons_properties_list = [[self.renderBtn,   QRect (740, 140, 61, 21), "render",           True],
-                                   [self.pauseBtn,    QRect (740, 120, 61, 21), "pause",            False],
-                                   [self.stopBtn,     QRect (740, 100, 61, 21), "stop",             False],
-                                   [self.upBtn,       QRect (820, 120, 21, 21), "one_row_up",       False],
-                                   [self.downBtn,     QRect (820, 140, 21, 21), "one_row_down",     False],
-                                   [self.moreDownBtn, QRect (820, 160, 21, 21), "ten_rows_down",    False],
-                                   [self.moreUpBtn,   QRect (820, 100, 21, 21), "ten_rows_up",      False],
-                                   [self.rightBtn,    QRect (780, 180, 21, 21), "one_column_right", False],
-                                   [self.moreRightBtn,QRect (800, 180, 21, 21), "ten_columns_right",False],
-                                   [self.leftBtn,     QRect (760, 180, 21, 21), "one_column_left",  False],
-                                   [self.furtherLeft, QRect (740, 180, 21, 21), "ten_columns_left", False],
-                                   [self.grid_switch, QRect (870, 230, 91, 31), "grid_switch",      False]]
+        buttons_properties_list = [[self.renderBtn,    QRect (740, 140, 61, 21), "render",            True],
+                                   [self.pauseBtn,     QRect (740, 120, 61, 21), "pause",             False],
+                                   [self.stopBtn,      QRect (740, 100, 61, 21), "stop",              False],
+                                   [self.upBtn,        QRect (820, 120, 21, 21), "one_row_up",        False],
+                                   [self.downBtn,      QRect (820, 140, 21, 21), "one_row_down",      False],
+                                   [self.moreDownBtn,  QRect (820, 160, 21, 21), "ten_rows_down",     False],
+                                   [self.moreUpBtn,    QRect (820, 100, 21, 21), "ten_rows_up",       False],
+                                   [self.rightBtn,     QRect (780, 180, 21, 21), "one_column_right",  False],
+                                   [self.moreRightBtn, QRect (800, 180, 21, 21), "ten_columns_right", False],
+                                   [self.leftBtn,      QRect (760, 180, 21, 21), "one_column_left",   False],
+                                   [self.furtherLeft,  QRect (740, 180, 21, 21), "ten_columns_left",  False],
+                                   [self.grid_switch,  QRect (870, 230, 91, 31), "grid_switch",       False]]
         
         for button in buttons_properties_list:
             button[0].setGeometry (button[1])
@@ -174,7 +189,7 @@ class Ui_Form (QWidget):
         self.grid_switch.setText  (_translate ("Form", "Grid on/off", None))
         self.slider_label.setText (_translate ("Form", "Arrows size", None))
         
-        self.connect (self.renderBtn,       SIGNAL ("clicked()"),        self.clickRender)
+        self.connect (self.renderBtn,       SIGNAL ("clicked()"),        self.startRender)
         self.connect (self.stopBtn,         SIGNAL ("clicked()"),        self.stopRender)
         self.connect (self.arrowSizeSlider, SIGNAL ("sliderMoved(int)"), self.resizeArrows)
     
@@ -202,16 +217,10 @@ class Ui_Form (QWidget):
         if self.__engine:
             
             self.__engine.setCarryOnFlag (False)
-            self.renderBtn.setDisabled (False)
-            self.stopBtn.setDisabled   (True)
-            
-            self.disconnect (self.__engine, SIGNAL ("update (float)"), self.updateImage)
-            self.disconnect (self.__engine, SIGNAL ("thread_completed()"), self.endCrunching)
-            self.disconnect (self.__engine, SIGNAL ("inters_created (PyQt_PyObject, PyQt_PyObject)"),          self.widget.addIntersection)
-            self.disconnect (self.__engine, SIGNAL ("vector_created (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
-            self.disconnect (self.__engine, SIGNAL ("line_created   (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
+            self.renderBtn.setDisabled   (False)
+            self.stopBtn.setDisabled     (True)
     
-    def clickRender (self):
+    def startRender (self):
         
         self.renderBtn.setDisabled (True) # grey out the render button.
         self.stopBtn.setDisabled  (False) # enable the stop button.
@@ -225,14 +234,10 @@ class Ui_Form (QWidget):
         self.image = self.widget.grabFrameBuffer ()
         self.pixmap_item = self.label_view.setPixmap (QPixmap.fromImage (self.image))
         
-        self.__engine = REngineThread (self.image, self.widget.getNormalMatrix (), self.widget.getFovy ())
+        # prep engine and start it up.
+        self.__engine.setImage (self.image)
+        self.__engine.setCameraNormalMatrix (self.widget.getNormalMatrix(), self.widget.getFovy ())
         self.__engine.setModel (self.__model)
-        self.connect (self.__engine, SIGNAL("update (float)"), self.updateImage)
-        self.connect (self.__engine, SIGNAL("thread_completed()"), self.endCrunching)
-        self.connect (self.__engine, SIGNAL("inters_created (PyQt_PyObject, PyQt_PyObject)"),          self.widget.addIntersection)
-        self.connect (self.__engine, SIGNAL("vector_created (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
-        self.connect (self.__engine, SIGNAL("line_created   (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
-        
         self.__engine.start ()
     
     def endCrunching (self):

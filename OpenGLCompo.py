@@ -434,7 +434,7 @@ class OGLViewer (QGLWidget):
     # the three methods below are for regulate the OpenGL widget's FPS based on the focus received by the user.
     def setUi_Form      (self, uif): self.uiform = uif
     def focusInEvent    (self, e):   self.uiform.speedUpGLFrameRate ()
-    def focusOutEvent   (self, e):   self.uiform.stopGLFrameRate ()
+    def focusOutEvent   (self, e):   self.uiform.freezeGLFrameRate ()
     
     def getFovy         (self): return self.__fovy
     def getMatrix       (self): return self.__mtx
