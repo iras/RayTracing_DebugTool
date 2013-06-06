@@ -48,8 +48,8 @@ class Ui_Form (QWidget):
         '''
         this method connects the REngine's signals.
         '''
-        self.connect (self.__engine, SIGNAL ("update (float)"), self.updateImage)
-        self.connect (self.__engine, SIGNAL ("thread_completed()"), self.endCrunching)
+        self.connect (self.__engine, SIGNAL ("update (float)"),     self.updateImage)
+        self.connect (self.__engine, SIGNAL ("thread_completed()"), self.RenderingCompleted)
         self.connect (self.__engine, SIGNAL ("inters_created (PyQt_PyObject, PyQt_PyObject)"),          self.widget.addIntersection)
         self.connect (self.__engine, SIGNAL ("vector_created (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
         self.connect (self.__engine, SIGNAL ("line_created   (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
@@ -175,16 +175,16 @@ class Ui_Form (QWidget):
         Form.setWindowTitle       (_translate ("Form", "RayTracing Debugging Tool", None))
         
         self.renderBtn.setText    (_translate ("Form", "Render", None))
-        self.pauseBtn.setText     (_translate ("Form", "Pause", None))
-        self.stopBtn.setText      (_translate ("Form", "Stop", None))
-        self.upBtn.setText        (_translate ("Form", "^", None))
-        self.downBtn.setText      (_translate ("Form", "v", None))
-        self.moreDownBtn.setText  (_translate ("Form", "+", None))
-        self.moreUpBtn.setText    (_translate ("Form", "-", None))
-        self.rightBtn.setText     (_translate ("Form", ">", None))
-        self.moreRightBtn.setText (_translate ("Form", "+", None))
-        self.leftBtn.setText      (_translate ("Form", "<", None))
-        self.furtherLeft.setText  (_translate ("Form", "-", None))
+        self.pauseBtn.setText     (_translate ("Form", "Pause",  None))
+        self.stopBtn.setText      (_translate ("Form", "Stop",   None))
+        self.upBtn.setText        (_translate ("Form", "^",      None))
+        self.downBtn.setText      (_translate ("Form", "v",      None))
+        self.moreDownBtn.setText  (_translate ("Form", "+",      None))
+        self.moreUpBtn.setText    (_translate ("Form", "-",      None))
+        self.rightBtn.setText     (_translate ("Form", ">",      None))
+        self.moreRightBtn.setText (_translate ("Form", "+",      None))
+        self.leftBtn.setText      (_translate ("Form", "<",      None))
+        self.furtherLeft.setText  (_translate ("Form", "-",      None))
         
         self.grid_switch.setText  (_translate ("Form", "Grid on/off", None))
         self.slider_label.setText (_translate ("Form", "Arrows size", None))
@@ -206,19 +206,7 @@ class Ui_Form (QWidget):
                     self.image.setPixel (x,y, qRgb (0, 0, 0))
         '''
     
-    # listeners  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-    
-    def resizeArrows (self, e):
-        
-        self.widget.changeArrowsSize (e*0.5)
-    
-    def stopRender (self):
-        
-        if self.__engine:
-            
-            self.__engine.setCarryOnFlag (False)
-            self.renderBtn.setDisabled   (False)
-            self.stopBtn.setDisabled     (True)
+    # listeners  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
     def startRender (self):
         
@@ -240,10 +228,23 @@ class Ui_Form (QWidget):
         self.__engine.setModel (self.__model)
         self.__engine.start ()
     
-    def endCrunching (self):
+    def stopRender (self):
+        
+        if self.__engine:
+            
+            self.__engine.setCarryOnFlag (False)
+            self.renderBtn.setDisabled   (False)
+            self.stopBtn.setDisabled     (True)
+    
+    def RenderingCompleted (self):
+        
         self.renderBtn.setDisabled (False)
         self.stopBtn.setDisabled   (True)
         self.progressBar.setValue  (100)
+    
+    
+    def resizeArrows (self, e):
+        self.widget.changeArrowsSize (e*0.5)
     def updateImage (self, e):
         self.pixmap_item = self.label_view.setPixmap (QPixmap.fromImage (self.image))
         self.progressBar.setValue (int(100*e))
