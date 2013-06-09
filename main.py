@@ -191,9 +191,10 @@ class Ui_Form (QWidget):
         self.grid_switch.setText  (_translate ("Form", "Grid on/off", None))
         self.slider_label.setText (_translate ("Form", "Arrows size", None))
         
-        self.connect (self.renderBtn,       SIGNAL ("clicked()"),          self.__fsm.startRendering)
-        self.connect (self.stopBtn,         SIGNAL ("clicked()"),          self.__fsm.stopRendering)
-        self.connect (self.arrowSizeSlider, SIGNAL ("sliderMoved(int)"),   self.resizeArrows)
+        self.connect (self.renderBtn,       SIGNAL ("clicked()"),        self.__fsm.startRendering)
+        self.connect (self.pauseBtn,        SIGNAL ("clicked()"),        self.__fsm.pauseRendering)
+        self.connect (self.stopBtn,         SIGNAL ("clicked()"),        self.__fsm.stopRendering)
+        self.connect (self.arrowSizeSlider, SIGNAL ("sliderMoved(int)"), self.resizeArrows)
     
     def initLabel (self):
         
@@ -247,11 +248,10 @@ class Ui_Form (QWidget):
         self.__engine.setModel (self.__model)
         self.__engine.start ()
     
-    def addCamera (self):
-        self.widget.addCamera ()
-    
-    def setIsStoppedFlag (self, boo):
-        self.__engine.setIsStoppedFlag (boo)
+    def addCamera (self): self.widget.addCamera ()
+    def setIsStoppedFlag (self, boo):  self.__engine.setIsStoppedFlag (boo)
+    def setIsPausedFlag  (self, boo):  self.__engine.setIsPausedFlag  (boo)
+    def changeRenderBtnName (self, title):  self.renderBtn.setText (_translate ("Form", title, None))
     
     # listeners  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     

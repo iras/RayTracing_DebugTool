@@ -45,13 +45,13 @@ class Reset (State):
         return self._fsm.getPlayingState()
     
     def resetRendering (self):
-        raise Error ("Already reset. This message shouldn't appear as the reset button should be greyed out.")
+        raise ValueError ("Already reset. This message shouldn't appear as the reset button should be greyed out.")
     
     def pauseRendering (self):
-        raise Error ("Can't pause when state is reset. This message shouldn't appear as the reset button should be greyed out.")
+        raise ValueError ("Can't pause when state is reset. This message shouldn't appear as the reset button should be greyed out.")
     
     def finaliseRender (self):
-        raise Error ("Can't finalise rendering when state is reset.")
+        raise ValueError ("Can't finalise rendering when state is 'reset'.")
 
 
 class Started (State):
@@ -62,7 +62,7 @@ class Started (State):
         State.__init__ (self, fsm)
     
     def startRendering (self):
-        raise Error ("Already rendering. This message shouldn't appear as the reset button should be greyed out.")
+        raise ValueError ("Already rendering. This message shouldn't appear as the reset button should be greyed out.")
     
     def resetRendering (self):
         
@@ -74,7 +74,14 @@ class Started (State):
         return self._fsm.getStoppedState ()
     
     def pauseRendering (self):
-        raise Error ("TODO Started:pauseRendering")
+        
+        self._fsm.delegateUIButtonsEnabling ({'renderBtn'   :True,   'pauseBtn'   :False,  'stopBtn'    :False,  'upBtn'      :True,
+                                              'downBtn'     :True,   'moreDownBtn':True,   'moreUpBtn'  :True,   'rightBtn'   :True,
+                                              'moreRightBtn':True,   'leftBtn'    :True,   'furtherLeft':True,   'progressBar':''})
+        self._fsm.delegateIsPausedFlagSetting (True)
+        self._fsm.delegateRenderBtnNameChanging ('Resume')
+        
+        return self._fsm.getPausedState ()
     
     def finaliseRender (self):
         
@@ -92,16 +99,32 @@ class Paused (State):
         State.__init__ (self, fsm)
     
     def startRendering (self):
-        raise Error ("TODO Paused:startRendering")
-    
-    def resetRendering (self):
-        raise Error ("TODO Paused:resetRendering")
+        
+        self._fsm.delegateUIButtonsEnabling ({'renderBtn'   :False,  'pauseBtn'   :True,   'stopBtn'    :True,   'upBtn'      :False,
+                                              'downBtn'     :False,  'moreDownBtn':False,  'moreUpBtn'  :False,  'rightBtn'   :False,
+                                              'moreRightBtn':False,  'leftBtn'    :False,  'furtherLeft':False,  'progressBar':'reset'})
+        self._fsm.delegateIsPausedFlagSetting (False)
+        self._fsm.delegateRenderBtnNameChanging ('Render')
+                
+        return self._fsm.getPlayingState()
     
     def pauseRendering (self):
-        raise Error ("TODO Paused:pauseRendering")
+        raise ValueError ("Already paused. This message shouldn't appear as the reset button should be greyed out.")
+    
+    def resetRendering (self):
+        
+        
+        self._fsm.delegateUIButtonsEnabling ({'renderBtn'   :True,   'pauseBtn'   :False,  'stopBtn'    :False,  'upBtn'      :False,
+                                              'downBtn'     :False,  'moreDownBtn':False,  'moreUpBtn'  :False,  'rightBtn'   :False,
+                                              'moreRightBtn':False,  'leftBtn'    :False,  'furtherLeft':False,  'progressBar':''})
+        self._fsm.delegateIsPausedFlagSetting (False)
+        self._fsm.delegateIsStoppedFlagSetting (True)
+        self._fsm.delegateRenderBtnNameChanging ('Render')
+        
+        return self._fsm.getStoppedState ()
     
     def finaliseRender (self):
-        raise Error ("TODO Paused:finaliseRender")
+        raise ValueError ("Can't finalise rendering when state is 'paused'.")
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -111,7 +134,6 @@ class DebugStateMachine ():
     '''
     Debug State Machine class
     '''
-    
     def __init__ (self, ui):
         
         self.__ui = ui
@@ -123,15 +145,18 @@ class DebugStateMachine ():
         self.__currentState  = self.__state_stopped
     
     def startRendering (self): self.__currentState = self.__currentState.startRendering ()
+    def pauseRendering (self): self.__currentState = self.__currentState.pauseRendering ()
     def stopRendering  (self): self.__currentState = self.__currentState.resetRendering ()
     def finaliseRender (self): self.__currentState = self.__currentState.finaliseRender ()
     
     # delegates
-    def delegateIsStoppedFlagSetting (self, boo):   self.__ui.setIsStoppedFlag (boo)
-    def delegateUIButtonsEnabling  (self, dict_ui): self.__ui.enableUIButtons (dict_ui)
-    def delegateEnginePrepAndStart (self):          self.__ui.prepAndStartEngineUp ()
-    def delegateScreenshotAddition (self):          self.__ui.addScreenshot ()
-    def delegateCameraAddition     (self):          self.__ui.addCamera ()
+    def delegateIsStoppedFlagSetting  (self, boo):     self.__ui.setIsStoppedFlag (boo)
+    def delegateIsPausedFlagSetting   (self, boo):     self.__ui.setIsPausedFlag  (boo)
+    def delegateUIButtonsEnabling     (self, dict_ui): self.__ui.enableUIButtons (dict_ui)
+    def delegateEnginePrepAndStart    (self):          self.__ui.prepAndStartEngineUp ()
+    def delegateScreenshotAddition    (self):          self.__ui.addScreenshot ()
+    def delegateCameraAddition        (self):          self.__ui.addCamera ()
+    def delegateRenderBtnNameChanging (self, title):   self.__ui.changeRenderBtnName (title)
     
     # state getters
     def getStoppedState (self): return self.__state_stopped

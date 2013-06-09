@@ -4,6 +4,7 @@ Created on May 15, 2013
 MIT License
 '''
 import sys
+from time import sleep
 
 from PyQt4.QtGui  import qRgb, QVector3D
 from PyQt4.QtCore import QThread, SIGNAL, QString
@@ -23,9 +24,6 @@ class REngineThread (QThread):
         
         self.__Origin = [0, 0, 0]
         self.__OriginWorld = []
-                
-        # main loop state
-        self.is_stopped = False
         
         # custom signals
         self.__SIGNAL_Update          = SIGNAL ('update(float)')
@@ -36,6 +34,12 @@ class REngineThread (QThread):
         
         self.__poly_model_e = None
         self.__poly_list_e  = []
+        
+        # main loop flags + loop state vars
+        self.is_stopped = False
+        self.is_paused  = False
+        
+        self.resetLoopReferences ()
     
     def setImage (self, image):
         
@@ -88,34 +92,61 @@ class REngineThread (QThread):
         
         angle_times_aspect_ratio = self.__angle * self.__aspect_ratio
         
-        for j in range (0, self.__height):
-            for i in range (0, self.__width):
-                
-                w_param = ((h + i)*inv_w-1) * angle_times_aspect_ratio
-                h_param = (1-(h + j)*inv_h) * self.__angle
-                
-                world_ray = self.__engine_mtools.cameraToWorldTransform (w_param, h_param, m)
-                
-                ray_dir = [world_ray[0] - self.__world_origin[0],
-                           world_ray[1] - self.__world_origin[1],
-                           world_ray[2] - self.__world_origin[2]]
-                ray_dir_norm = self.__engine_mtools.normalise (ray_dir)
-                
-                
-                # core rendering
-                self.core_render_test2 (i, j, ray_dir_norm, ray_dir)
-                
-                if self.is_stopped: break # out of the inner loop
-            if self.is_stopped: break # out of the outer loop
+        while True:
             
-            # update screen every 10 lines
-            if j%10==0:  self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
-            
-        
-        self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
-        
-        if not self.is_stopped: # if and only if the rendering was completed then fire this signal away.
-            self.emit (self.__SIGNAL_ThreadCompleted)
+            if self.is_paused:
+                sleep (0.25)
+            else:
+                for j in range (self.j_copy, self.__height):
+                    for i in range (self.i_copy, self.__width):
+                        
+                        # set up basic camera rays. 
+                        w_param = ((h + i)*inv_w-1) * angle_times_aspect_ratio
+                        h_param = (1-(h + j)*inv_h) * self.__angle
+                        
+                        world_ray = self.__engine_mtools.cameraToWorldTransform (w_param, h_param, m)
+                        
+                        ray_dir = [world_ray[0] - self.__world_origin[0],
+                                   world_ray[1] - self.__world_origin[1],
+                                   world_ray[2] - self.__world_origin[2]]
+                        ray_dir_norm = self.__engine_mtools.normalise (ray_dir)
+                        
+                        
+                        
+                        # core rendering bit.
+                        self.core_render_test2 (i, j, ray_dir_norm, ray_dir)
+                        
+                        
+                        
+                        # inner loop control
+                        if self.is_stopped: break # out of the inner loop
+                        if self.is_paused:
+                            self.saveLoopReferences (i, j)
+                            break # out of the inner loop
+                    
+                    # mid loop control
+                    if self.is_stopped: break # out of the mid loop
+                    if self.is_paused:
+                        break # out of the mid loop
+                    else:
+                        self.i_copy = 0 # normal behaviour
+                    
+                    
+                    # update screen every 10 lines
+                    if j%10==0:  self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
+                
+                
+                self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
+                
+                
+                # outer loop control
+                if not self.is_stopped and not self.is_paused: # if and only if the rendering was completed then fire this signal away.
+                    self.emit (self.__SIGNAL_ThreadCompleted)
+                    self.resetLoopReferences ()
+                    break # out of the outer loop
+                if self.is_stopped:
+                    self.resetLoopReferences ()
+                    break # out of the outer loop
     
     
     def core_render_test2 (self, i, j, ray_dir_norm, ray_dir):
@@ -215,30 +246,35 @@ class REngineThread (QThread):
         
         return isect_t
     
-    def setIsStoppedFlag (self, boo):
-        '''
-        setter. This method allows putting the break onto the rendering process if boo is set to False.
-        '''
-        self.is_stopped = boo
     
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
+     
     def setModel (self, model):
         '''
-        setter. This method transfers a copy of the model (polygons list) to the REngineThread class instance.
+        This method transfers a copy of the model (polygons list) to the REngineThread class instance.
         '''
         self.__poly_model_e = model
         self.__poly_list_e  = model.getPolyListCopy ()
     
+    def setIsStoppedFlag (self, boo): self.is_stopped = boo
+    def setIsPausedFlag  (self, boo): self.is_paused  = boo
+    
+    def resetLoopReferences (self):
+        self.i_copy = 0
+        self.j_copy = 0
+        
+    def saveLoopReferences (self, i, j):
+        self.i_copy = i
+        self.j_copy = j
     
     
-    
-    
-    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
     def core_render_test1 (self, i, j, ray_dir_norm, ray_dir):
         '''
         This method just "renders" plain vector directions from the center of the camera.
+        No fancy user controls. Just a sweep.
         '''
         ff = 255;   a = 1;  h = 0.5;
         
