@@ -250,8 +250,8 @@ class Ui_Form (QWidget):
     def addCamera (self):
         self.widget.addCamera ()
     
-    def setCarryOnFlag (self, boo):
-        self.__engine.setCarryOnFlag (boo)
+    def setIsStoppedFlag (self, boo):
+        self.__engine.setIsStoppedFlag (boo)
     
     # listeners  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     

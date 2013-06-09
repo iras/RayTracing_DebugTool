@@ -4,7 +4,6 @@ Created on June 6, 2013
 MIT license
 '''
 
-import errno
 from main import Ui_Form
 from RTEngine import REngineThread
 from OpenGLCompo import OGLViewer
@@ -70,7 +69,7 @@ class Started (State):
         self._fsm.delegateUIButtonsEnabling ({'renderBtn'   :True,   'pauseBtn'   :False,  'stopBtn'    :False,  'upBtn'      :False,
                                               'downBtn'     :False,  'moreDownBtn':False,  'moreUpBtn'  :False,  'rightBtn'   :False,
                                               'moreRightBtn':False,  'leftBtn'    :False,  'furtherLeft':False,  'progressBar':''})
-        self._fsm.delegateCarryOnFlagSetting (False)
+        self._fsm.delegateIsStoppedFlagSetting (True)
         
         return self._fsm.getStoppedState ()
     
@@ -128,8 +127,8 @@ class DebugStateMachine ():
     def finaliseRender (self): self.__currentState = self.__currentState.finaliseRender ()
     
     # delegates
+    def delegateIsStoppedFlagSetting (self, boo):   self.__ui.setIsStoppedFlag (boo)
     def delegateUIButtonsEnabling  (self, dict_ui): self.__ui.enableUIButtons (dict_ui)
-    def delegateCarryOnFlagSetting (self, boo):     self.__ui.setCarryOnFlag (boo)
     def delegateEnginePrepAndStart (self):          self.__ui.prepAndStartEngineUp ()
     def delegateScreenshotAddition (self):          self.__ui.addScreenshot ()
     def delegateCameraAddition     (self):          self.__ui.addCamera ()

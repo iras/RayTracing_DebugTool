@@ -25,7 +25,7 @@ class REngineThread (QThread):
         self.__OriginWorld = []
                 
         # main loop state
-        self.carry_on = True
+        self.is_stopped = False
         
         # custom signals
         self.__SIGNAL_Update          = SIGNAL ('update(float)')
@@ -77,7 +77,7 @@ class REngineThread (QThread):
         '''
         this method provides the chosen view's camera rays to the core_render method.
         '''
-        self.carry_on = True
+        self.is_stopped = False
         
         inv_w = 2.0/self.__width
         inv_h = 2.0/self.__height
@@ -104,17 +104,17 @@ class REngineThread (QThread):
                 
                 # core rendering
                 self.core_render_test2 (i, j, ray_dir_norm, ray_dir)
-                                        
+                
+                if self.is_stopped: break # out of the inner loop
+            if self.is_stopped: break # out of the outer loop
             
             # update screen every 10 lines
             if j%10==0:  self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
             
-            if not self.carry_on:
-                break
         
         self.emit (self.__SIGNAL_Update, float(j)/float(self.__height))
         
-        if self.carry_on: # if and only if the rendering was completed then fire this signal away.
+        if not self.is_stopped: # if and only if the rendering was completed then fire this signal away.
             self.emit (self.__SIGNAL_ThreadCompleted)
     
     
@@ -215,11 +215,11 @@ class REngineThread (QThread):
         
         return isect_t
     
-    def setCarryOnFlag (self, boo):
+    def setIsStoppedFlag (self, boo):
         '''
         setter. This method allows putting the break onto the rendering process if boo is set to False.
         '''
-        self.carry_on = boo
+        self.is_stopped = boo
     
     
     def setModel (self, model):
