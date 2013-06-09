@@ -10,6 +10,7 @@ from OpenGLCompo  import OGLViewer
 
 from RTEngine     import REngineThread
 from ThreeDModels import Model
+from RTDebugFSM   import *
 
 
 try:
@@ -37,20 +38,20 @@ class Ui_Form (QWidget):
         QWidget.__init__(self, parent)
         self.timer = QTimer (self)
         
-        self.__engine = None
-        self.__model  = Model ()
-        
-        self.image = QImage (720, 450, QImage.Format_RGB888)
+        self.image    = QImage (720, 450, QImage.Format_RGB888)
         
         self.__engine = REngineThread ()
+        self.__model  = Model ()
+        self.__fsm    = DebugStateMachine (self)
     
+        
     def wireEngineUp (self):
         '''
         this method connects the REngine's signals.
         '''
-        self.connect (self.__engine, SIGNAL ("update (float)"),     self.updateImage)
-        self.connect (self.__engine, SIGNAL ("thread_completed()"), self.RenderingCompleted)
-        self.connect (self.__engine, SIGNAL ("inters_created (PyQt_PyObject, PyQt_PyObject)"),          self.widget.addIntersection)
+        self.connect (self.__engine, SIGNAL ("update (float)"), self.updateImage)
+        self.connect (self.__engine, SIGNAL ("thread_completed()"), self.__fsm.finaliseRender)
+        self.connect (self.__engine, SIGNAL ("inters_created (PyQt_PyObject, PyQt_PyObject)"), self.widget.addIntersection)
         self.connect (self.__engine, SIGNAL ("vector_created (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addArrow)
         self.connect (self.__engine, SIGNAL ("line_created   (PyQt_PyObject, PyQt_PyObject, QString)"), self.widget.addLine)
     
@@ -98,6 +99,7 @@ class Ui_Form (QWidget):
         sizePolicy.setHeightForWidth (self.widget.sizePolicy().hasHeightForWidth())
         self.widget.setSizePolicy (sizePolicy)
         self.widget.setObjectName (_fromUtf8 ("widget"))
+        
         self.wireOGLViewerUp ()
         self.wireEngineUp ()
         
@@ -124,24 +126,24 @@ class Ui_Form (QWidget):
         self.furtherLeft  = QPushButton (Form)
         self.grid_switch  = QPushButton (Form)
         
-        buttons_properties_list = [[self.renderBtn,    QRect (740, 140, 61, 21), "render",            True],
-                                   [self.pauseBtn,     QRect (740, 120, 61, 21), "pause",             False],
-                                   [self.stopBtn,      QRect (740, 100, 61, 21), "stop",              False],
-                                   [self.upBtn,        QRect (820, 120, 21, 21), "one_row_up",        False],
-                                   [self.downBtn,      QRect (820, 140, 21, 21), "one_row_down",      False],
-                                   [self.moreDownBtn,  QRect (820, 160, 21, 21), "ten_rows_down",     False],
-                                   [self.moreUpBtn,    QRect (820, 100, 21, 21), "ten_rows_up",       False],
-                                   [self.rightBtn,     QRect (780, 180, 21, 21), "one_column_right",  False],
-                                   [self.moreRightBtn, QRect (800, 180, 21, 21), "ten_columns_right", False],
-                                   [self.leftBtn,      QRect (760, 180, 21, 21), "one_column_left",   False],
-                                   [self.furtherLeft,  QRect (740, 180, 21, 21), "ten_columns_left",  False],
-                                   [self.grid_switch,  QRect (870, 230, 91, 31), "grid_switch",       False]]
+        buttons_properties_list = [[self.renderBtn,    True,  QRect (740, 140, 61, 21), "render"],
+                                   [self.pauseBtn,     False, QRect (740, 120, 61, 21), "pause"],
+                                   [self.stopBtn,      False, QRect (740, 100, 61, 21), "stop"],
+                                   [self.upBtn,        False, QRect (820, 120, 21, 21), "one_row_up"],
+                                   [self.downBtn,      False, QRect (820, 140, 21, 21), "one_row_down"],
+                                   [self.moreDownBtn,  False, QRect (820, 160, 21, 21), "ten_rows_down"],
+                                   [self.moreUpBtn,    False, QRect (820, 100, 21, 21), "ten_rows_up"],
+                                   [self.rightBtn,     False, QRect (780, 180, 21, 21), "one_column_right"],
+                                   [self.moreRightBtn, False, QRect (800, 180, 21, 21), "ten_columns_right"],
+                                   [self.leftBtn,      False, QRect (760, 180, 21, 21), "one_column_left"],
+                                   [self.furtherLeft,  False, QRect (740, 180, 21, 21), "ten_columns_left"],
+                                   [self.grid_switch,  False, QRect (870, 230, 91, 31), "grid_switch"]]
         
         for button in buttons_properties_list:
-            button[0].setGeometry (button[1])
+            button[0].setEnabled  (button[1])
+            button[0].setGeometry (button[2])
             button[0].setFont (font)
-            button[0].setObjectName (_fromUtf8 (button[2]))
-            button[0].setEnabled (button[3])
+            button[0].setObjectName (_fromUtf8 (button[3]))
         
         # other UI elements
         
@@ -189,9 +191,9 @@ class Ui_Form (QWidget):
         self.grid_switch.setText  (_translate ("Form", "Grid on/off", None))
         self.slider_label.setText (_translate ("Form", "Arrows size", None))
         
-        self.connect (self.renderBtn,       SIGNAL ("clicked()"),        self.startRender)
-        self.connect (self.stopBtn,         SIGNAL ("clicked()"),        self.stopRender)
-        self.connect (self.arrowSizeSlider, SIGNAL ("sliderMoved(int)"), self.resizeArrows)
+        self.connect (self.renderBtn,       SIGNAL ("clicked()"),          self.__fsm.startRendering)
+        self.connect (self.stopBtn,         SIGNAL ("clicked()"),          self.__fsm.stopRendering)
+        self.connect (self.arrowSizeSlider, SIGNAL ("sliderMoved(int)"),   self.resizeArrows)
     
     def initLabel (self):
         
@@ -206,42 +208,52 @@ class Ui_Form (QWidget):
                     self.image.setPixel (x,y, qRgb (0, 0, 0))
         '''
     
-    # listeners  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def enableUIButtons (self, boolean_dict):
+        '''
+        method used by the debug state machine to manage the greyed-out state of buttons.
+        '''
+        b_dict = dict (boolean_dict)
+        
+        self.renderBtn.setEnabled    (b_dict['renderBtn'])
+        self.pauseBtn.setEnabled     (b_dict['pauseBtn'])
+        self.stopBtn.setEnabled      (b_dict['stopBtn'])
+        self.upBtn.setEnabled        (b_dict['upBtn'])
+        self.downBtn.setEnabled      (b_dict['downBtn'])
+        self.moreDownBtn.setEnabled  (b_dict['moreDownBtn'])
+        self.moreUpBtn.setEnabled    (b_dict['moreUpBtn'])
+        self.rightBtn.setEnabled     (b_dict['rightBtn'])
+        self.moreRightBtn.setEnabled (b_dict['moreRightBtn'])
+        self.leftBtn.setEnabled      (b_dict['leftBtn'])
+        self.furtherLeft.setEnabled  (b_dict['furtherLeft'])
+        
+        if b_dict['progressBar'] == 'completed':
+            self.progressBar.setValue (100)
+        elif b_dict['progressBar'] == 'reset':
+            self.progressBar.reset ()
     
-    def startRender (self):
-        
-        self.renderBtn.setDisabled (True) # grey out the render button.
-        self.stopBtn.setDisabled  (False) # enable the stop button.
-        self.progressBar.reset ()
-        
-        # add 3D representation of a 3D camera.
-        self.plainTextEdit.insertPlainText ('\n\n\n'+str(self.widget.getMatrix()))
-        self.widget.addCamera ()
-        
-        # grab screenshot of OpenGL viewer and add it into the QImage instance.
+    def addScreenshot (self):
+        '''
+        it grabs a screenshot of OpenGL viewer and add it into the QImage instance.
+        '''
         self.image = self.widget.grabFrameBuffer ()
         self.pixmap_item = self.label_view.setPixmap (QPixmap.fromImage (self.image))
-        
-        # prep engine and start it up.
+    
+    def prepAndStartEngineUp (self):
+        '''
+        it preps the engine and start it up.
+        '''
         self.__engine.setImage (self.image)
         self.__engine.setCameraNormalMatrix (self.widget.getNormalMatrix(), self.widget.getFovy ())
         self.__engine.setModel (self.__model)
         self.__engine.start ()
     
-    def stopRender (self):
-        
-        if self.__engine:
-            
-            self.__engine.setCarryOnFlag (False)
-            self.renderBtn.setDisabled   (False)
-            self.stopBtn.setDisabled     (True)
+    def addCamera (self):
+        self.widget.addCamera ()
     
-    def RenderingCompleted (self):
-        
-        self.renderBtn.setDisabled (False)
-        self.stopBtn.setDisabled   (True)
-        self.progressBar.setValue  (100)
+    def setCarryOnFlag (self, boo):
+        self.__engine.setCarryOnFlag (boo)
     
+    # listeners  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
     def resizeArrows (self, e):
         self.widget.changeArrowsSize (e*0.5)
